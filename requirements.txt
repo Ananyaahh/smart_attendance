@@ -1,0 +1,9 @@
+numpy
+opencv-python
+scikit-learn
+insightface==0.7.3
+onnxruntime
+fastapi
+uvicorn 
+google-auth
+python-dotenv

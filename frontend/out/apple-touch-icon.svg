@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Smart Attendance Apple touch icon">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e" />
+      <stop offset="55%" stop-color="#134e4a" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="40" fill="url(#bg)" />
+  <text
+    x="90"
+    y="104"
+    fill="#ffffff"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="56"
+    font-weight="700"
+    letter-spacing="-8"
+    text-anchor="middle"
+  >
+    SA
+  </text>
+</svg>
