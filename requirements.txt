@@ -1,5 +1,5 @@
 numpy
-opencv-python
+opencv-python-headless
 scikit-learn
 insightface==0.7.3
 onnxruntime
@@ -7,3 +7,5 @@ fastapi
 uvicorn 
 google-auth
 python-dotenv
+python-multipart
+httpx

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Smart Attendance System
 
 A hybrid AI-powered attendance platform that automates student attendance using facial recognition.
@@ -380,3 +381,7 @@ Interested in AI/ML, Data Science, Full-Stack Development, and Intelligent Syste
 This project was built as an exploration of how AI, computer vision, backend systems, and hybrid mobile applications can work together to solve a real-world academic workflow problem.
 
 The goal was not just to build a UI, but to understand the complete engineering pipeline behind an AI-assisted application.
+=======
+# smart_attendance
+AI-based smart attendance system with facial embedding recognition, REST APIs, mobile deployment, and real-time attendance analytics.
+>>>>>>> 159a313cf52c80551fd27c5c913fba0500d887ad

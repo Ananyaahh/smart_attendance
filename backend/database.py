@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import csv
+import os
 import pickle
 import sqlite3
-from datetime import datetime
-from pathlib import Path
-from typing import Any
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-DB_NAME = ROOT_DIR / "attendance.db"
+DB_DIR = Path(os.getenv("DB_DIR", str(ROOT_DIR)))
+DB_NAME = DB_DIR / "attendance.db"
 REPORT_DIR = ROOT_DIR / "reports"
 REPORT_DIR.mkdir(exist_ok=True)
 
