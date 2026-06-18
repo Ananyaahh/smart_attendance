@@ -33,14 +33,14 @@ function resolveApiBase() {
 
     // Capacitor uses a custom scheme, so infer the laptop backend explicitly for device demos.
     if (isNativeShell) {
-      return "http://192.168.1.3:8000";
+      return "https://web-production-b4960.up.railway.app";
     }
 
     const resolvedHost = hostname === "localhost" ? "127.0.0.1" : hostname;
-    return `${protocol}//${resolvedHost}:8000`;
+    return "https://web-production-b4960.up.railway.app";
   }
 
-  return "http://127.0.0.1:8000";
+  return "https://web-production-b4960.up.railway.app";
 }
 
 type Screen = "auth" | "classes" | "workspace";
