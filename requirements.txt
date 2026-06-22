@@ -1,10 +1,9 @@
 numpy
 opencv-python-headless
 scikit-learn
-insightface==0.7.3
-onnxruntime
+face_recognition
 fastapi
-uvicorn 
+uvicorn
 google-auth
 python-dotenv
 python-multipart

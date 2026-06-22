@@ -33,14 +33,14 @@ function resolveApiBase() {
 
     // Capacitor uses a custom scheme, so infer the laptop backend explicitly for device demos.
     if (isNativeShell) {
-      return "https://web-production-b4960.up.railway.app";
+      return "https://smart-attendance-backend-3pzh.onrender.com";
     }
 
     const resolvedHost = hostname === "localhost" ? "127.0.0.1" : hostname;
-    return "https://web-production-b4960.up.railway.app";
+    return "https://smart-attendance-backend-3pzh.onrender.com";
   }
 
-  return "https://web-production-b4960.up.railway.app";
+  return "https://smart-attendance-backend-3pzh.onrender.com";
 }
 
 type Screen = "auth" | "classes" | "workspace";

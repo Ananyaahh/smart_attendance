@@ -3,54 +3,45 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-from insightface.app import FaceAnalysis
-from sklearn.metrics.pairwise import cosine_similarity
+import cv2
 
 from backend.database import get_student_embeddings
 
-_face_app = None
+_face_recognition = None
 
 
-def get_face_app() -> FaceAnalysis:
-    global _face_app
-    if _face_app is None:
-        app = FaceAnalysis(providers=["CPUExecutionProvider"])
-        app.prepare(ctx_id=-1, det_size=(960, 960))
-        _face_app = app
-    return _face_app
-
-
-def _detect_faces(frame: np.ndarray) -> list[Any]:
-    app = get_face_app()
-    faces = app.get(frame)
-    if faces:
-        return faces
-
-    height, width = frame.shape[:2]
-    longest_side = max(height, width)
-    if longest_side < 1200:
-        scale = min(2.0, 1200 / float(longest_side))
-        enlarged = np.ascontiguousarray(frame)
-        if scale > 1.05:
-            import cv2
-
-            enlarged = cv2.resize(frame, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
-        faces = app.get(enlarged)
-        if faces:
-            return faces
-
-    return []
+def get_face_recognition():
+    global _face_recognition
+    if _face_recognition is None:
+        import face_recognition
+        _face_recognition = face_recognition
+    return _face_recognition
 
 
 def extract_embedding(frame: np.ndarray) -> np.ndarray | None:
-    faces = _detect_faces(frame)
-    if not faces:
+    fr = get_face_recognition()
+    # Convert BGR (OpenCV) to RGB (face_recognition)
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    
+    # Try to find face locations
+    face_locations = fr.face_locations(rgb_frame, model="hog")
+    
+    if not face_locations:
+        # Try with smaller image if no face found
+        small = cv2.resize(rgb_frame, None, fx=0.5, fy=0.5)
+        face_locations = fr.face_locations(small, model="hog")
+        if not face_locations:
+            return None
+        # Scale locations back up
+        face_locations = [(t*2, r*2, b*2, l*2) for t, r, b, l in face_locations]
+    
+    # Get face encodings (embeddings)
+    encodings = fr.face_encodings(rgb_frame, face_locations)
+    
+    if not encodings:
         return None
-    best_face = max(
-        faces,
-        key=lambda face: float(face.det_score) * max(1.0, float((face.bbox[2] - face.bbox[0]) * (face.bbox[3] - face.bbox[1]))),
-    )
-    return best_face.embedding
+    
+    return np.array(encodings[0])
 
 
 def find_best_match(
@@ -68,18 +59,21 @@ def find_best_match(
     }
 
     for student_id, class_id, name, roll_number, ref_embedding in students:
-        similarity = cosine_similarity(
-            face_embedding.reshape(1, -1),
-            ref_embedding.reshape(1, -1),
-        )[0][0]
+        # face_recognition uses euclidean distance — convert to similarity
+        distance = float(np.linalg.norm(face_embedding - ref_embedding))
+        # Convert distance to similarity (lower distance = higher similarity)
+        similarity = max(0.0, 1.0 - distance)
+        
         if similarity > best["confidence"]:
+            # face_recognition threshold: distance < 0.6 is a match
+            matched = distance < threshold
             best = {
                 "student_id": student_id,
                 "class_id": class_id,
                 "name": name,
                 "roll_number": roll_number,
-                "confidence": float(similarity),
-                "matched": similarity >= threshold,
+                "confidence": similarity,
+                "matched": matched,
             }
 
     if not best["matched"]:
