@@ -5,7 +5,8 @@ const config: CapacitorConfig = {
   appName: "Smart Attendance",
   webDir: "out",
   server: {
-    androidScheme: "https",
+    url: "https://smart-attendance-nine-kappa.vercel.app",
+    cleartext: false,
   },
 };
 

@@ -347,21 +347,28 @@ export function AttendanceApp() {
 
   async function ensureCamera() {
     if (!navigator.mediaDevices?.getUserMedia) {
-      setScanStatus("Camera unavailable in this browser context. Use Scan From Photo.");
-      setRegisterMessage("Camera unavailable in this browser context. Use Register From Photo.");
+      setScanStatus("Camera unavailable. Use Scan From Photo instead.");
+      setRegisterMessage("Camera unavailable. Use Register From Photo instead.");
       return false;
     }
 
     try {
       if (!cameraStreamRef.current) {
-        cameraStreamRef.current = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: "user",
-          },
-          audio: false,
-        });
+        try {
+          cameraStreamRef.current = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+              facingMode: { ideal: "environment" },
+            },
+            audio: false,
+          });
+        } catch {
+          cameraStreamRef.current = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false,
+          });
+        }
       }
 
       if (liveVideoRef.current) {
@@ -1070,7 +1077,6 @@ export function AttendanceApp() {
                             ref={registerPhotoInputRef}
                             type="file"
                             accept="image/*"
-                            capture="user"
                             hidden
                             onChange={(event) => {
                               const file = event.target.files?.[0];
