@@ -1,38 +1,18 @@
 from __future__ import annotations
 from typing import Any
 import cv2
-import mediapipe as mp
 import numpy as np
 from backend.database import get_student_embeddings
 
-_face_detector = None
+_face_cascade = None
 
 def _get_detector():
-    global _face_detector
-    if _face_detector is None:
-        _face_detector = mp.solutions.face_detection.FaceDetection(
-            model_selection=1,
-            min_detection_confidence=0.5,
-        )
-    return _face_detector
+    global _face_cascade
+    if _face_cascade is None:
+        _face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    return _face_cascade
 
 _FACE_SIZE = 100
-
-def _extract_face_crop(frame, bbox):
-    h, w = frame.shape[:2]
-    x_min = max(0, int(bbox.xmin * w))
-    y_min = max(0, int(bbox.ymin * h))
-    x_max = min(w, int((bbox.xmin + bbox.width) * w))
-    y_max = min(h, int((bbox.ymin + bbox.height) * h))
-    if x_max <= x_min or y_max <= y_min:
-        return None
-    pad_x = int((x_max - x_min) * 0.2)
-    pad_y = int((y_max - y_min) * 0.2)
-    x_min = max(0, x_min - pad_x)
-    y_min = max(0, y_min - pad_y)
-    x_max = min(w, x_max + pad_x)
-    y_max = min(h, y_max + pad_y)
-    return frame[y_min:y_max, x_min:x_max]
 
 def _face_to_embedding(face_crop):
     gray = cv2.cvtColor(face_crop, cv2.COLOR_BGR2GRAY)
@@ -52,17 +32,21 @@ def _face_to_embedding(face_crop):
     return vec
 
 def extract_embedding(frame):
-    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     detector = _get_detector()
-    results = detector.process(rgb)
-    if not results.detections:
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = detector.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    if len(faces) == 0:
         enhanced = cv2.convertScaleAbs(frame, alpha=1.3, beta=20)
-        results = detector.process(cv2.cvtColor(enhanced, cv2.COLOR_BGR2RGB))
-        if not results.detections:
+        gray2 = cv2.cvtColor(enhanced, cv2.COLOR_BGR2GRAY)
+        faces = detector.detectMultiScale(gray2, scaleFactor=1.1, minNeighbors=3, minSize=(20, 20))
+        if len(faces) == 0:
             return None
-    best = max(results.detections, key=lambda d: d.location_data.relative_bounding_box.width * d.location_data.relative_bounding_box.height)
-    face_crop = _extract_face_crop(frame, best.location_data.relative_bounding_box)
-    if face_crop is None or face_crop.size == 0:
+    x, y, w, h = max(faces, key=lambda f: f[2]*f[3])
+    pad_x, pad_y = int(w*0.2), int(h*0.2)
+    x1 = max(0, x-pad_x); y1 = max(0, y-pad_y)
+    x2 = min(frame.shape[1], x+w+pad_x); y2 = min(frame.shape[0], y+h+pad_y)
+    face_crop = frame[y1:y2, x1:x2]
+    if face_crop.size == 0:
         return None
     return _face_to_embedding(face_crop)
 

@@ -7,4 +7,3 @@ scikit-learn
 python-multipart
 google-auth
 google-auth-oauthlib
-mediapipe==0.10.9
