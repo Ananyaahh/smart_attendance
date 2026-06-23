@@ -9,9 +9,10 @@ from pathlib import Path
 from typing import Any
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-DB_DIR = Path(os.getenv("DB_DIR", str(ROOT_DIR)))
+_data_dir = os.getenv("DB_DIR", "/data" if os.path.isdir("/data") else str(ROOT_DIR))
+DB_DIR = Path(_data_dir)
 DB_NAME = DB_DIR / "attendance.db"
-REPORT_DIR = ROOT_DIR / "reports"
+REPORT_DIR = Path(_data_dir) / "reports"
 REPORT_DIR.mkdir(exist_ok=True)
 
 

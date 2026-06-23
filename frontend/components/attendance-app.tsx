@@ -33,14 +33,14 @@ function resolveApiBase() {
 
     // Capacitor uses a custom scheme, so infer the laptop backend explicitly for device demos.
     if (isNativeShell) {
-      return "https://smart-attendance-backend-3pzh.onrender.com";
+      return "http://127.0.0.1:8000";
     }
 
     const resolvedHost = hostname === "localhost" ? "127.0.0.1" : hostname;
-    return "https://smart-attendance-backend-3pzh.onrender.com";
+    return "http://127.0.0.1:8000";
   }
 
-  return "https://smart-attendance-backend-3pzh.onrender.com";
+  return "http://127.0.0.1:8000";
 }
 
 type Screen = "auth" | "classes" | "workspace";
@@ -345,6 +345,34 @@ export function AttendanceApp() {
     }
   }
 
+  async function attachAndPlay(videoEl: HTMLVideoElement, stream: MediaStream): Promise<void> {
+    // Only re-attach if not already using this stream — avoids redundant play() calls.
+    if (videoEl.srcObject !== stream) {
+      videoEl.srcObject = stream;
+    }
+
+    if (videoEl.paused) {
+      await videoEl.play().catch(() => undefined);
+    }
+
+    // If the video is already showing frames we're done immediately.
+    if (videoEl.readyState >= 2 && videoEl.videoWidth > 0) return;
+
+    // Otherwise wait for the canplay event (up to 5 s).
+    await new Promise<void>((resolve) => {
+      const onCanPlay = () => {
+        videoEl.removeEventListener("canplay", onCanPlay);
+        clearTimeout(timer);
+        resolve();
+      };
+      const timer = setTimeout(() => {
+        videoEl.removeEventListener("canplay", onCanPlay);
+        resolve(); // resolve anyway — captureBase64 will do its own readyState check
+      }, 5000);
+      videoEl.addEventListener("canplay", onCanPlay);
+    });
+  }
+
   async function ensureCamera() {
     if (!navigator.mediaDevices?.getUserMedia) {
       setScanStatus("Camera unavailable. Use Scan From Photo instead.");
@@ -359,7 +387,7 @@ export function AttendanceApp() {
             video: {
               width: { ideal: 640 },
               height: { ideal: 480 },
-              facingMode: { ideal: "environment" },
+              facingMode: "user",
             },
             audio: false,
           });
@@ -371,17 +399,15 @@ export function AttendanceApp() {
         }
       }
 
-      if (liveVideoRef.current) {
-        liveVideoRef.current.srcObject = cameraStreamRef.current;
-        await liveVideoRef.current.play().catch(() => undefined);
-      }
+      const stream = cameraStreamRef.current;
 
-      if (registerVideoRef.current) {
-        registerVideoRef.current.srcObject = cameraStreamRef.current;
-        await registerVideoRef.current.play().catch(() => undefined);
-      }
+      // Attach and play both video elements in parallel, waiting for each to
+      // report canplay before returning so captureBase64 finds frames immediately.
+      await Promise.all([
+        liveVideoRef.current ? attachAndPlay(liveVideoRef.current, stream) : Promise.resolve(),
+        registerVideoRef.current ? attachAndPlay(registerVideoRef.current, stream) : Promise.resolve(),
+      ]);
 
-      await sleep(250);
       setScanStatus("Camera ready");
       setRegisterMessage("Camera ready");
       return true;
@@ -394,12 +420,28 @@ export function AttendanceApp() {
   }
 
   async function captureBase64(videoElement: HTMLVideoElement | null) {
-    const cameraReady = await ensureCamera();
-    if (!cameraReady || !videoElement || !canvasRef.current) {
+    if (!videoElement || !canvasRef.current) {
       throw new Error("Camera frame not ready. Start the camera and wait a moment.");
     }
 
-    const deadline = Date.now() + 10000;
+    // Only (re-)initialise the camera if the stream is missing or the video
+    // element is not yet attached — avoids a redundant getUserMedia call when
+    // the stream is already running.
+    const needsInit =
+      !cameraStreamRef.current ||
+      videoElement.srcObject !== cameraStreamRef.current ||
+      videoElement.paused ||
+      videoElement.readyState < 2;
+
+    if (needsInit) {
+      const cameraReady = await ensureCamera();
+      if (!cameraReady) {
+        throw new Error("Camera frame not ready. Start the camera and wait a moment.");
+      }
+    }
+
+    // Wait up to 8 s for the first frame.
+    const deadline = Date.now() + 8000;
     while (Date.now() < deadline) {
       if (videoElement.readyState >= 2 && videoElement.videoWidth > 0 && videoElement.videoHeight > 0) {
         break;

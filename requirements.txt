@@ -1,10 +1,10 @@
-numpy
-opencv-python-headless
-scikit-learn
-face_recognition
 fastapi
-uvicorn
-google-auth
+uvicorn[standard]
 python-dotenv
+opencv-python-headless
+numpy
+face-recognition
+scikit-learn
 python-multipart
-httpx
+google-auth
+google-auth-oauthlib
