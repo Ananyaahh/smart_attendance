@@ -3,8 +3,8 @@ uvicorn[standard]
 python-dotenv
 opencv-python-headless
 numpy
-face-recognition
 scikit-learn
 python-multipart
 google-auth
 google-auth-oauthlib
+mediapipe
